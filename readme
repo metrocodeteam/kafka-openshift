@@ -1,0 +1,71 @@
+
+step 1: oc new-project amq-streams
+
+step 2: Install the AMQ Streams Operator Under Installation Mode, select amq-stream as the namespace
+
+step 3: Creating Zookeeper and Kafka Clusters
+
+      oc get sc
+
+step 4: Create a Kafka cluster which will also deploy a zookeeper cluster required by Kafka 
+
+     oc project amq-streams
+     oc apply -f  01-kafka-zookeeper.yaml
+step 5: watch oc get all
+
+step 6: oc get all
+
+step 7: oc get pvc -n amq-streams
+
+step 8: oc get pv -o json | jq -r '.items | sort_by(.spec.capacity.storage)[]| select(.spec.claimRef.namespace=="amq-streams") | [.spec.claimRef.name,.spec.capacity.storage] | @tsv'
+
+step 9: oc get pvc -n amq-streams
+
+step 10: oc get pv -o json | jq -r '.items | sort_by(.spec.capacity.storage)[]| select(.spec.claimRef.namespace=="amq-streams") | [.spec.claimRef.name,.spec.capacity.storage] | @tsv'
+
+step 11: Create Kafka Topic and Kafka User
+
+         oc apply -f 02-kafka-topic.yaml
+		 
+step 12: oc get kt
+
+step 13:  oc get kt
+			NAME       PARTITIONS   REPLICATION FACTOR
+			my-topic   3            3
+
+step 14 : Create a Kafka user
+
+		  oc apply -f 03-kafka-user.yaml
+		  
+step 15: oc get kafkauser
+
+step 16: Create a sample Kafka Producer and Consumer Application
+
+		oc apply -f 04-hello-world-producer.yaml
+		
+        This sample application will produce 10,000 messages in an iterative manner or we can also produce 1 Million Messages 
+		
+		to review the Kafka producer messages lets tail to the logs of hello-world-producer app
+		
+		oc logs -n amq-streams -f $(oc get pods -l app=hello-world-producer -o name)
+step 17: Deploy Kafka consumer application
+
+		oc apply -f 05-hello-world-consumer.yaml
+		
+step 18: Monitor logs of kafka consumer app, in real time using CLI Or via GIU (shown above)
+
+		oc logs -n amq-streams -f $(oc get pods -l app=hello-world-consumer -o name)
+
+
+step 19 : checking if kafka is resilent or not 
+
+    idea is to check if kafka is high available and fault tolerance 
+	
+	we will kill few pods and check if kafka is will  still process messages . this way we can check persistant volume also . 
+
+open four unix sessions 
+a) In session-1: tail the real-time logs of Kafka producer application 
+b) In session-2 : tail the real-time logs of kafka consumer application
+c) In session-3: watch OCP Kafka pods, PV and PVC status
+d) In session-4: run the following command to induce failure of the Kafka pod
+         oc delete pods kafka-cluster-kafka-0 --grace-period=0
